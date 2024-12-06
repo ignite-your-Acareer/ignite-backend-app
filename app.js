@@ -1,18 +1,18 @@
 require("dotenv").config();
 const express = require("express");
 const app = express();
-const strengthsFinder = require("./botScripts/soren/strengthsFinder.js");
+const mainController = require("./controllers/mainController.js");
 
 // Middleware to parse JSON bodies
 app.use(express.json());
 
-// Route for strength finder
-app.post("/soren/strength-finder", async (req, res) => {
+// Root route
+app.post("/", async (req, res) => {
   try {
-    await careerFilter();
-    res.json({ success: true });
+    const response = await mainController(req.body);
+    res.json(response);
   } catch (error) {
-    console.error("Error in strength finder:", error);
+    console.error("Error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

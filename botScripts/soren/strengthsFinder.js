@@ -1,43 +1,13 @@
 const openai = require("../../openai.js");
 const axios = require("axios");
+const { sorenSystemPrompt } = require("../../prompts/soren/careerBuilder.js");
 
-async function strengthsFinder() {
-  const messages = [
-    {
-      role: "system",
-      content: `You are Soren, an AI guide designed to help users identify their three core strengths. Your task is to engage the user in a conversation by asking thoughtful and specific questions about their skills, achievements, and experiences. Based on their responses, compile a list of three strengths that best define them. Once you have identified the three strengths, call the specified function you have access to in your tools.`,
-    },
-    { role: "user", content: "I want to figure out my career strengths and inspirations." },
-    {
-      role: "assistant",
-      content: `Great! To help you identify your core career strengths, let's start by exploring your skills and experiences. Here are a few questions:
-
-1. Can you describe a recent achievement or project that you're particularly proud of? What role did you play in it?
-2. What are some skills that you find yourself using most frequently, either in your job or in daily life?
-3. Are there any tasks or activities that you feel particularly energized or motivated by?
-
-Feel free to answer any or all of these, and we'll start to identify patterns that point to your strengths.`,
-    },
-    {
-      role: "user",
-      content:
-        "I'm proud of my ability to teach and mentor others. I like public speaking and explaining things to others. I also like coaching hockey!",
-    },
-    {
-      role: "assistant",
-      content: `It sounds like you have a strong passion and talent for communication and mentorship. Based on what you've shared, here are some potential core strengths:
-
-1. **Teaching and Mentorship**: You have a knack for guiding and supporting others, which suggests you're skilled in building relationships and fostering growth in people.
-
-2. **Public Speaking and Communication**: Enjoying public speaking and explaining things indicates you're confident and effective in conveying information clearly and engagingly.
-
-3. **Coaching and Leadership**: Your interest in coaching hockey shows that you not only enjoy teaching but also leading and motivating teams towards common goals.
-
-Does this resonate with you? If so, I can save these as your identified strengths. If there's anything else you'd like to add or adjust, let me know!`,
-    },
-    { role: "user", content: "Yes, these are my strengths!" },
-  ];
-
+async function strengthsFinder({ messages }) {
+  console.log("Strengths finder messages:");
+  console.log(messages);
+  messages.unshift({ role: "system", content: sorenSystemPrompt });
+  console.log("THESE ARE THE MESSAGES COMING INTO STRENGTHS FINDER");
+  console.log(messages);
   const tools = [
     {
       type: "function",
@@ -68,9 +38,12 @@ Does this resonate with you? If so, I can save these as your identified strength
     tool_choice: "auto",
   });
 
-  console.log(response.choices[0].message.content);
+  console.log("Strengths finder response:");
+  console.log(response.choices[0].message);
+  console.log(response.choices[0].message.tool_calls);
 
   if (response.choices[0].message.tool_calls) {
+    console;
     const functionName = response.choices[0].message.tool_calls[0].function.name;
     if (functionName === "updateStrengths") {
       console.log("Updating strengths...");
@@ -85,8 +58,19 @@ Does this resonate with you? If so, I can save these as your identified strength
       } catch (error) {
         console.error("Error updating strengths:", error);
       }
+
+      return {
+        message: null,
+        nextStep: "interviewPrep",
+        success: true,
+      };
     }
   }
+  return {
+    message: response.choices[0].message.content,
+    nextStep: null,
+    success: true,
+  };
 }
 
 module.exports = strengthsFinder;
