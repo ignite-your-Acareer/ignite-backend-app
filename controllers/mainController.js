@@ -1,4 +1,5 @@
 const strengthsFinder = require("../botScripts/soren/strengthsFinder.js");
+const inspirationsFinder = require("../botScripts/soren/inspirationsFinder.js");
 
 const mainController = async (body) => {
   const { nextStep, messages } = body;
@@ -7,10 +8,17 @@ const mainController = async (body) => {
     const chatGptResponse = await strengthsFinder({ messages });
     return chatGptResponse;
   }
-
-  return {
-    success: "Request received from main controller!",
-  };
+  
+  if (nextStep === "inspirations" || nextStep === "inspirationsFinder") {
+    const chatGptResponse = await inspirationsFinder({ messages });
+    return chatGptResponse;
+  }
+  
+  console.error(`Unknown nextStep: ${nextStep}`);
+return {
+  error: `Unrecognized nextStep: ${nextStep}`,
+  success: false,
+};
 };
 
 module.exports = mainController;

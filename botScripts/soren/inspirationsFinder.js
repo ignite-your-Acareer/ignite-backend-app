@@ -1,36 +1,34 @@
 const openai = require("../../openai.js");
 const axios = require("axios");
 const { personalityPrompt } = require("../../prompts/soren/sorenPersonalityPrompt.js");
-const { strengthsPrompt } = require("../../prompts/soren/strengthsPrompt.js");
+const { inspirationsPrompt } = require("../../prompts/soren/inspirationsPrompt.js");
 
-async function strengthsFinder({ messages }) {
-  console.log("Strengths finder messages:");
+async function inspirationsFinder({ messages }) {
+  console.log("Inspirations finder messages:");
   console.log(messages);
-
-  // Add personality and strengths-specific prompts
   messages.unshift({
     role: "system",
-    content: `${personalityPrompt}\n\n${strengthsPrompt}`,
+    content: `${personalityPrompt}\n\n${inspirationsPrompt}`,
   });
 
   const tools = [
     {
       type: "function",
       function: {
-        name: "updateStrengths",
-        description: "Saves information about the user's strengths.",
+        name: "updateInspirations",
+        description: "Saves information about the user's inspirations.",
         parameters: {
           type: "object",
           properties: {
-            strengths: {
+            inspirations: {
               type: "array",
               items: {
                 type: "string",
               },
-              description: "An array of the user's strengths.",
+              description: "An array of the user's top six inspirations.",
             },
           },
-          required: ["strengths"],
+          required: ["inspirations"],
         },
       },
     },
@@ -43,47 +41,47 @@ async function strengthsFinder({ messages }) {
     tool_choice: "auto",
   });
 
-  console.log("Strengths finder response:");
+  console.log("Inspirations finder response:");
   console.log(response.choices[0].message);
   console.log(response.choices[0].message.tool_calls);
 
   if (response.choices[0].message.tool_calls) {
     const functionName = response.choices[0].message.tool_calls[0].function.name;
-    if (functionName === "updateStrengths") {
-      console.log("Updating strengths...");
-      const strengthsData = JSON.parse(response.choices[0].message.tool_calls[0].function.arguments);
+    if (functionName === "updateInspirations") {
+      console.log("Updating inspirations...");
+      const inspirationsData = JSON.parse(response.choices[0].message.tool_calls[0].function.arguments);
 
       try {
-        // Save strengths to Bubble database
+        // Save inspirations to Bubble database
         const saveResponse = await axios.post(
-          "https://rakasha.bubbleapps.io/version-test/api/1.1/wf/save-user-strengths",
+          "https://rakasha.bubbleapps.io/version-test/api/1.1/wf/save-user-inspirations",
           {
             user: "1730429277720x101617448332705470",
-            strengths: strengthsData.strengths, // Array
+            inspirations: inspirationsData.inspirations, // Array
           }
         );
-        console.log("Strengths updated successfully:", saveResponse.data);
+        console.log("Inspirations updated successfully:", saveResponse.data);
 
-        // Update the nextStep to inspirations
+        // Update the nextStep to "environment"
         const updateNextStepResponse = await axios.post(
           "https://rakasha.bubbleapps.io/version-test/api/1.1/wf/update-next-step",
           {
             user: "1730429277720x101617448332705470",
-            nextStep: "inspirationsFinder",
+            nextStep: "environment",
           }
         );
         console.log("Next step updated successfully:", updateNextStepResponse.data);
 
         return {
           message: null,
-          nextStep: "inspirations",
+          nextStep: "environment",
           success: true,
         };
       } catch (error) {
-        console.error("Error updating strengths or next step:", error);
+        console.error("Error updating inspirations or next step:", error);
         return {
-          message: "There was an error saving your strengths. Please try again.",
-          nextStep: "strengthsFinder",
+          message: "There was an error saving your inspirations. Please try again.",
+          nextStep: "inspirationsFinder",
           success: false,
         };
       }
@@ -97,4 +95,4 @@ async function strengthsFinder({ messages }) {
   };
 }
 
-module.exports = strengthsFinder;
+module.exports = inspirationsFinder;

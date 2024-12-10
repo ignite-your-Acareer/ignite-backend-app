@@ -1,18 +1,13 @@
 const openai = require("../../openai.js");
 const axios = require("axios");
-const { personalityPrompt } = require("../../prompts/soren/sorenPersonalityPrompt.js");
-const { strengthsPrompt } = require("../../prompts/soren/strengthsPrompt.js");
+const { sorenSystemPrompt } = require("../../prompts/soren/careerBuilder.js");
 
 async function strengthsFinder({ messages }) {
   console.log("Strengths finder messages:");
   console.log(messages);
-
-  // Add personality and strengths-specific prompts
-  messages.unshift({
-    role: "system",
-    content: `${personalityPrompt}\n\n${strengthsPrompt}`,
-  });
-
+  messages.unshift({ role: "system", content: sorenSystemPrompt });
+  console.log("THESE ARE THE MESSAGES COMING INTO STRENGTHS FINDER");
+  console.log(messages);
   const tools = [
     {
       type: "function",
@@ -48,48 +43,29 @@ async function strengthsFinder({ messages }) {
   console.log(response.choices[0].message.tool_calls);
 
   if (response.choices[0].message.tool_calls) {
+    console;
     const functionName = response.choices[0].message.tool_calls[0].function.name;
     if (functionName === "updateStrengths") {
       console.log("Updating strengths...");
       const strengthsData = JSON.parse(response.choices[0].message.tool_calls[0].function.arguments);
 
       try {
-        // Save strengths to Bubble database
-        const saveResponse = await axios.post(
-          "https://rakasha.bubbleapps.io/version-test/api/1.1/wf/save-user-strengths",
-          {
-            user: "1730429277720x101617448332705470",
-            strengths: strengthsData.strengths, // Array
-          }
-        );
-        console.log("Strengths updated successfully:", saveResponse.data);
-
-        // Update the nextStep to inspirations
-        const updateNextStepResponse = await axios.post(
-          "https://rakasha.bubbleapps.io/version-test/api/1.1/wf/update-next-step",
-          {
-            user: "1730429277720x101617448332705470",
-            nextStep: "inspirationsFinder",
-          }
-        );
-        console.log("Next step updated successfully:", updateNextStepResponse.data);
-
-        return {
-          message: null,
-          nextStep: "inspirations",
-          success: true,
-        };
+        const response = await axios.post("https://rakasha.bubbleapps.io/version-test/api/1.1/wf/save-user-strengths", {
+          user: "1730429277720x101617448332705470",
+          strengths: strengthsData.strengths,
+        });
+        console.log("Strengths updated successfully:", response.data);
       } catch (error) {
-        console.error("Error updating strengths or next step:", error);
-        return {
-          message: "There was an error saving your strengths. Please try again.",
-          nextStep: "strengthsFinder",
-          success: false,
-        };
+        console.error("Error updating strengths:", error);
       }
+
+      return {
+        message: null,
+        nextStep: "interviewPrep",
+        success: true,
+      };
     }
   }
-
   return {
     message: response.choices[0].message.content,
     nextStep: null,
